@@ -1,0 +1,19 @@
+=== Evaluation at Default Threshold (0.5) ===
+ Confusion Matrix:
+ [[70  1]
+ [ 2 41]]
+Precision: 0.9761904761904762
+Recall: 0.9534883720930233
+ROC-AUC Score: 0.99737962659679
+
+
+
+=== After Threshold Tuning (Threshold = 0.3) ===
+Precision: 0.9130434782608695
+Recall: 0.9767441860465116
+
+
+=== Sigmoid Function ===
+Sigmoid turns a number (z) into a probability between 0 and 1:
+  sigmoid(z) = 1 / (1 + exp(-z))
+
