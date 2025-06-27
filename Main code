@@ -1,0 +1,128 @@
+#  Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    confusion_matrix, precision_score, recall_score,
+    roc_auc_score, roc_curve, ConfusionMatrixDisplay, precision_recall_curve
+)
+
+#  Load Dataset
+df = pd.read_csv('/content/drive/MyDrive/data.csv')
+
+#  Preprocess Data
+df = df.drop(columns=['id', 'Unnamed: 32'])  # Drop irrelevant columns
+df['diagnosis'] = df['diagnosis'].map({'M': 1, 'B': 0})  # Encode target
+
+#  Split Features and Target
+X = df.drop(columns='diagnosis')
+y = df['diagnosis']
+
+#  Train/Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+#  Standardize Features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+#  Train Logistic Regression
+model = LogisticRegression()
+model.fit(X_train_scaled, y_train)
+
+#  Predict Probabilities
+y_proba = model.predict_proba(X_test_scaled)[:, 1]
+y_pred_default = (y_proba >= 0.5).astype(int)
+
+#  Evaluation
+conf_matrix = confusion_matrix(y_test, y_pred_default)
+precision = precision_score(y_test, y_pred_default)
+recall = recall_score(y_test, y_pred_default)
+roc_auc = roc_auc_score(y_test, y_proba)
+
+print("=== Evaluation at Default Threshold (0.5) ===")
+print("Confusion Matrix:\n", conf_matrix)
+print("Precision:", precision)
+print("Recall:", recall)
+print("ROC-AUC Score:", roc_auc)
+
+#  Visualize Confusion Matrix
+plt.figure(figsize=(5, 4))
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", cbar=False)
+plt.title("Confusion Matrix (Threshold = 0.5)")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.show()
+
+#  ROC Curve
+fpr, tpr, thresholds_roc = roc_curve(y_test, y_proba)
+plt.figure(figsize=(6, 5))
+plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.2f}")
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#  Threshold Tuning (e.g., 0.3)
+tuned_threshold = 0.3
+y_pred_tuned = (y_proba >= tuned_threshold).astype(int)
+precision_tuned = precision_score(y_test, y_pred_tuned)
+recall_tuned = recall_score(y_test, y_pred_tuned)
+
+print(f"\n=== After Threshold Tuning (Threshold = {tuned_threshold}) ===")
+print("Precision:", precision_tuned)
+print("Recall:", recall_tuned)
+
+# Visualize New Confusion Matrix
+conf_matrix_tuned = confusion_matrix(y_test, y_pred_tuned)
+plt.figure(figsize=(5, 4))
+sns.heatmap(conf_matrix_tuned, annot=True, fmt="d", cmap="Oranges", cbar=False)
+plt.title(f"Confusion Matrix (Threshold = {tuned_threshold})")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.show()
+
+#  Sigmoid Function Explanation
+print("\n=== Sigmoid Function ===")
+print("Sigmoid turns a number (z) into a probability between 0 and 1:")
+print("  sigmoid(z) = 1 / (1 + exp(-z))")
+
+# Plot Sigmoid Function
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+z_vals = np.linspace(-10, 10, 100)
+sig_vals = sigmoid(z_vals)
+plt.figure(figsize=(6, 4))
+plt.plot(z_vals, sig_vals, label='sigmoid(z)', color='purple')
+plt.axvline(0, color='gray', linestyle='--')
+plt.axhline(0.5, color='red', linestyle='--', label='Threshold = 0.5')
+plt.title("Sigmoid Function")
+plt.xlabel("z (linear score)")
+plt.ylabel("Predicted Probability")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#  Precision & Recall vs Threshold Curve
+precisions, recalls, thresholds_pr = precision_recall_curve(y_test, y_proba)
+
+plt.figure(figsize=(8, 5))
+plt.plot(thresholds_pr, precisions[:-1], label="Precision", color="blue")
+plt.plot(thresholds_pr, recalls[:-1], label="Recall", color="green")
+plt.axvline(x=tuned_threshold, color="red", linestyle="--", label=f"Threshold = {tuned_threshold}")
+plt.title("Precision & Recall vs Threshold")
+plt.xlabel("Threshold")
+plt.ylabel("Score")
+plt.legend()
+plt.grid(True)
+plt.show()
